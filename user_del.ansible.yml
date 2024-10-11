@@ -1,0 +1,16 @@
+---
+- name: Управление учетными записями
+  hosts: vbox
+  tasks:
+    - name: Добавление УЗ в систему
+      user:
+        name: test_user
+        state: absent
+        remove: yes
+      become: true
+    - name: Удаление домашнего каталога, если он не был удален
+      command: rm -rf /home/test_user
+      become: true
+
+
+

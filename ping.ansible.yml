@@ -1,0 +1,6 @@
+---
+- name: ping hosts
+  hosts: vbox
+  tasks:
+    - name: Проверка подключения
+      ping:

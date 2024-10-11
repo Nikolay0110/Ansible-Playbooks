@@ -1,0 +1,9 @@
+---
+- name: Установка Docker
+  hosts: vbox
+  tasks:
+    - name: Установка Docker в Astra Linux
+      apt:
+        name: docker.io
+        state: absent
+      become: true
