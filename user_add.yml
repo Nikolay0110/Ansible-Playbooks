@@ -1,0 +1,44 @@
+---
+- name: Управление учетными записями
+  hosts: vbox
+  vars:
+    user: test_user  # Имя новой учетной записи
+    password: "1234"  # Пароль новой учетной записи
+  tasks:
+    - name: Определить группу для sudo
+      set_fact:
+        sudo_group: "{{ 'sudo' if ansible_os_family == 'Debian' else 'wheel' }}"
+
+    - name: Проверка существования группы wheel
+      command: getent group wheel
+      register: wheel_group_check
+      ignore_errors: true
+
+    - name: Установить sudo_group в sudo, если wheel не существует
+      set_fact:
+        sudo_group: "sudo"
+      when: wheel_group_check.rc != 0
+
+    - name: Добавление УЗ c правами root в систему
+      user:
+        name: "{{ user }}"
+        state: present
+        create_home: yes
+        shell: /bin/bash
+        group: "{{ sudo_group }}"
+        password: "{{ password | password_hash('sha512') }}"
+      become: true
+
+    - name: Получить информацию о системе
+      command: /bin/bash -c "cat /etc/os-release"
+      register: os_release_info
+
+    - name: Определить дистрибутив
+      set_fact:
+        ansible_os_family: "{{ os_release_info.stdout_lines | select('search', '^ID_LIKE=') | map('regex_replace', '^ID_LIKE=(.*)', '\\1') | list | first }}"
+
+    - name: Назначение максимального уровня привилегий
+      shell: /bin/bash -c "pdpl-user {{ user }} -i 63"  # 63 - максимальный уровень привилегий
+      when: ansible_os_family == 'debian'  # Будет выполнено только в ОС семейства Debian
+      ignore_errors: true
+      become: true  # Используем привилегии root
