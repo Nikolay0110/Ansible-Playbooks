@@ -18,7 +18,7 @@
 
     - name: Установить sudo_group в sudo, если wheel не существует
       set_fact:
-        sudo_group: "sudo"
+        sudo_group: "sudo,astra-admin"
       when: wheel_group_check.rc != 0
 
     - name: Добавление УЗ c правами root в систему
@@ -27,12 +27,12 @@
         state: present
         create_home: yes
         shell: /bin/bash
-        group: "{{ sudo_group }}"
+        groups: "{{ sudo_group }}"
         password: "{{ password | password_hash('sha512') }}"
       become: "{{ level_become }}"
 
     - name: Назначение максимального уровня привилегий
       shell: /bin/bash -c "pdpl-user {{ user }} -i {{ level_privileges }}"
-      when: sudo_group == 'sudo'  # Будет выполнено только в ОС семейства Debian
+      when: sudo_group == 'sudo,astra-admin'  # Будет выполнено только в ОС семейства Debian
       ignore_errors: true
       become: "{{ level_become }}"  # Используем привилегии root

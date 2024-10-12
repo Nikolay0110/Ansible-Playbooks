@@ -1,0 +1,16 @@
+---
+- name: Управление учетными записями
+  hosts: all
+  vars:
+    user: test_user  # Имя новой учетной записи
+    password: "1234"  # Пароль новой учетной записи
+  tasks:
+    - name: Добавление УЗ, без прав суперпользователя
+      user:
+        name: "{{ user }}"
+        state: present
+        group: users
+        create_home: yes
+        shell: /bin/bash
+        password: "{{ password | password_hash('sha512') }}"
+      become: true
