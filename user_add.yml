@@ -4,8 +4,10 @@
   vars:
     user: test_user  # Имя новой учетной записи
     password: "1234"  # Пароль новой учетной записи
+    level_privileges: 63  # Уровень привилегий для Astra Linux, максимальный - 63
+    level_become: true  # Права sudo дял tasks
   tasks:
-    - name: Определить группу для sudo
+    - name: Определить группу для sudo в зависимости от семейства ОС
       set_fact:
         sudo_group: "{{ 'sudo' if ansible_os_family == 'Debian' else 'wheel' }}"
 
@@ -27,18 +29,10 @@
         shell: /bin/bash
         group: "{{ sudo_group }}"
         password: "{{ password | password_hash('sha512') }}"
-      become: true
-
-    - name: Получить информацию о системе
-      command: /bin/bash -c "cat /etc/os-release"
-      register: os_release_info
-
-    - name: Определить дистрибутив
-      set_fact:
-        ansible_os_family: "{{ os_release_info.stdout_lines | select('search', '^ID_LIKE=') | map('regex_replace', '^ID_LIKE=(.*)', '\\1') | list | first }}"
+      become: "{{ level_become }}"
 
     - name: Назначение максимального уровня привилегий
-      shell: /bin/bash -c "pdpl-user {{ user }} -i 63"  # 63 - максимальный уровень привилегий
-      when: ansible_os_family == 'debian'  # Будет выполнено только в ОС семейства Debian
+      shell: /bin/bash -c "pdpl-user {{ user }} -i {{ level_privileges }}"
+      when: sudo_group == 'sudo'  # Будет выполнено только в ОС семейства Debian
       ignore_errors: true
-      become: true  # Используем привилегии root
+      become: "{{ level_become }}"  # Используем привилегии root
