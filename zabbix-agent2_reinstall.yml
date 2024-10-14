@@ -1,0 +1,40 @@
+---
+- name: Переустановка Zabbix Agent в RedOS 8
+  hosts: all
+  become: true
+  user: my_user
+  tasks:
+    - name: Остановка агента
+      command: systemctl stop zabbix-agent2
+
+    - name: Удаление агента
+      shell: "cd /home/ "{{ user }}" && rpm -e zabbix-agent2-5.0.42-1.red80.x86_64"
+
+    - name: Перезагрузка конфига systemd
+      command: systemctl daemon-reload
+
+    - name: Установка агента
+      command: "cd /home/"{{ user }}" && rpm -i zabbix-agent2-5.0.42-1.red80.x86_64.rpm"
+      
+    - name: Удаление нового конфига Zabbix
+      command: rm -f /etc/zabbix/zabbix_agent2.conf
+
+    - name: Восстановление исходного конфига Zabbix
+      command: mv /etc/zabbix/zabbix_agent2.conf.rpmsave /etc/zabbix/zabbix_agent2.conf
+
+    - name: Снятие маски с агента
+      command: systemctl unmask zabbix-agent2
+
+    - name: Включение автозагрузки агента
+      command: systemctl enable zabbix-agent2
+
+    - name: Запуск агента
+      command: systemctl start zabbix-agent2
+
+    - name: Проверка статуса
+      command: systemctl status zabbix-agent2
+      register: zabbix_agent_status
+
+    - name: Статус агента
+      debug:
+        msg: "{{ zabbix_agent_status.stdout_lines }}"
